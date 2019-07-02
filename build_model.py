@@ -3,7 +3,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import roc_auc_score
+import matplotlib.pyplot as plt
 
 class build_model:
     def __init__(self,data):
@@ -66,16 +68,58 @@ class build_model:
         # 使用train_test_split方法，将x,y划分训练集和测试集
         x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=33, stratify=y)
 
-        parameters = {'kernel': ('linear', 'rbf'), 'C': [1,10]}
+        parameters = {'kernel': ('linear', 'rbf'), 'C': [1,5]}
 
         svm_clf = SVC()
-        clf = GridSearchCV(svm_clf, parameters, cv=5)
+        clf = GridSearchCV(svm_clf, parameters, n_jobs=4)
         clf.fit(x_train, y_train)
 
         y_predict_proba = clf._predict_proba_lr(x_test)
         y_predict = y_predict_proba[:,1]
 
         test_auc = roc_auc_score(y_true=y_test, y_score=y_predict)
+
+        return clf, test_auc
+
+    def knn_build(self):
+        # 筛选data中的Default列的值，赋予变量y
+        y = self.data['Default'].values
+
+        # 筛选除去Default列的其他列的值，赋予变量x
+        x = self.data.drop(['Default'], axis=1).values
+
+        # 使用train_test_split方法，将x,y划分训练集和测试集
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=33, stratify=y)
+
+        neighbors = []
+        test_score = []
+
+        # for k in range(2, 21, 2):
+        #     neighbors.append(k)
+        #     knn_clf = KNeighborsClassifier(n_neighbors=k,algorithm='kd_tree')
+        #     knn_clf.fit(x_train, y_train)
+        #     y_predict = knn_clf.predict_proba(x_test)[:,1]
+        #     test_score.append(roc_auc_score(y_test,y_predict))
+        #
+        # clf = None
+        # test_auc = max(test_score)
+        # plt.xlabel('n_neighbors')
+        # plt.ylabel('AUC')
+        # plt.plot(neighbors, test_score, label='test set')
+        # plt.show()
+
+        #GridSearch
+        knn_clf = KNeighborsClassifier(algorithm='kd_tree')
+        parameters = {'n_neighbors': [15, 20],'weights': ('uniform', 'distance')}
+
+        clf = GridSearchCV(knn_clf, parameters, cv=5, n_jobs=4)
+        clf.fit(x_train, y_train)
+
+        y_predict_proba = clf.predict_proba(x_test)
+        y_predict = y_predict_proba[:, 1]
+
+        test_auc = roc_auc_score(y_true=y_test, y_score=y_predict)
+
 
         return clf, test_auc
 
