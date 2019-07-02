@@ -5,6 +5,8 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import roc_auc_score
+from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import f1_score
 import matplotlib.pyplot as plt
 
 class build_model:
@@ -35,8 +37,18 @@ class build_model:
         # 取目标分数为正类(1)的概率估计
         y_predict = y_predict_proba[:, 1]
 
-        # 利用roc_auc_score查看模型效果
+        # 利用precision_recall curve查看模型效果
         test_auc = roc_auc_score(y_true=y_test, y_score=y_predict)
+
+        # 利用roc_auc_score查看模型效果
+        precision, recall, thresholds = precision_recall_curve(y_test, y_predict)
+        plt.plot(precision, recall)
+        plt.xlabel('precision')
+        plt.ylabel('recall')
+        plt.show()
+
+        F1_score = 2 * precision * recall / (precision + recall)
+        print("F-score of LR: ", max(F1_score)) #对于不同的precision 和recall 的组合，选出F-score最大的
 
         return lr, test_auc
 
@@ -55,6 +67,16 @@ class build_model:
         rf_clf.fit(x_train, y_train)
         y_predict = rf_clf.predict_proba(x_test)[:, 1]
         test_auc = roc_auc_score(y_test, y_predict)
+
+        # 利用roc_auc_score查看模型效果
+        precision, recall, thresholds = precision_recall_curve(y_test, y_predict)
+        plt.plot(precision, recall)
+        plt.xlabel('precision')
+        plt.ylabel('recall')
+        plt.show()
+
+        F1_score = 2 * precision * recall / (precision + recall)
+        print("F-score of RF: ", max(F1_score)) #对于不同的precision 和recall 的组合，选出F-score最大的
 
         return rf_clf, test_auc
 
@@ -94,7 +116,24 @@ class build_model:
         neighbors = []
         test_score = []
 
-        # for k in range(2, 21, 2):
+        #使用默认参数
+        # clf = None
+        # knn_clf = KNeighborsClassifier()
+        # knn_clf.fit(x_train, y_train)
+        # y_predict = knn_clf.predict_proba(x_test)[:,1]
+        # test_auc = roc_auc_score(y_test, y_predict)
+        #
+        # precision, recall, thresholds = precision_recall_curve(y_test, y_predict)
+        # plt.plot(precision, recall)
+        # plt.xlabel('precision')
+        # plt.ylabel('recall')
+        # plt.show()
+        #
+        # F1_score = 2 * precision * recall / (precision + recall)
+        # print("F-score of knn: ", max(F1_score))
+
+        #寻找最优参数区间
+        # for k in range(30, 55, 2):
         #     neighbors.append(k)
         #     knn_clf = KNeighborsClassifier(n_neighbors=k,algorithm='kd_tree')
         #     knn_clf.fit(x_train, y_train)
@@ -110,7 +149,7 @@ class build_model:
 
         #GridSearch
         knn_clf = KNeighborsClassifier(algorithm='kd_tree')
-        parameters = {'n_neighbors': [15, 20],'weights': ('uniform', 'distance')}
+        parameters = {'n_neighbors': [32, 37],'weights': ('uniform', 'distance')}
 
         clf = GridSearchCV(knn_clf, parameters, cv=5, n_jobs=4)
         clf.fit(x_train, y_train)
